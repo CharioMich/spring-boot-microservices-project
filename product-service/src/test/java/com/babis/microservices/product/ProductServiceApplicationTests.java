@@ -30,6 +30,7 @@ class ProductServiceApplicationTests {
 	@LocalServerPort
 	private Integer port;
 
+	// Configure RestAssured before each test
 	@BeforeEach
 	void setup() {
 		RestAssured.baseURI = "http://localhost";
