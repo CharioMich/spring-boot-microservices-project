@@ -1,26 +1,11 @@
 package com.babis.microservices.order.client;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
 
-@Component
-@RequiredArgsConstructor
-public class InventoryClient {
+public interface InventoryClient {
 
-    private final RestClient restClient;
+    @GetExchange("/api/inventory")
+    boolean isInStock(@RequestParam String skuCode, @RequestParam Integer quantity);
 
-    public boolean isInStock(String skuCode, Integer quantity) {
-        Boolean response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/inventory")
-                        .queryParam("skuCode", skuCode)
-                        .queryParam("quantity", quantity)
-                        .build())
-                .retrieve()
-                .body(Boolean.class);
-
-        // Match Feign behavior: never return null
-        return Boolean.TRUE.equals(response);
-    }
 }
