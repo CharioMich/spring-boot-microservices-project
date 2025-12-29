@@ -10,7 +10,6 @@ The project is structured under the following diagram:
 ## Pre-requisites
 - Java 21+
 - Docker 29.x+
-- Maven
 
 ## Technologies Used
 - mySQL (8.3.0)
