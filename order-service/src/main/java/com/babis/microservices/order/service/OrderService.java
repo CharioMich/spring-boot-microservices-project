@@ -33,6 +33,7 @@ public class OrderService {
             orderRepository.save(order);
         } else {
             throw new IllegalArgumentException("Product is not in stock, skuCode: " + orderRequest.skuCode());
+            // Logic needs refactoring for a real case scenario
         }
     }
 }
