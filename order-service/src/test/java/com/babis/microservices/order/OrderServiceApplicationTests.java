@@ -13,7 +13,9 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = "inventory.url=http://localhost:${wiremock.server.port}")
 @AutoConfigureWireMock(port = 0)	// port = 0 -> Assigns a random port to WireMock server
 class OrderServiceApplicationTests {
 
@@ -51,7 +53,7 @@ class OrderServiceApplicationTests {
 				.when()
 				.post("/api/orders")
 				.then()
-				.statusCode(201)
+				.statusCode(200)
 				.extract()
 				.body().asString();
 

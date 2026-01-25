@@ -18,7 +18,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
 
-    public void placeOrder(OrderRequest orderRequest) {
+    public String placeOrder(OrderRequest orderRequest) {
 
         boolean inStock = inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity());
 
@@ -31,9 +31,10 @@ public class OrderService {
             order.setQuantity(orderRequest.quantity());
             // Save order entity to the database
             orderRepository.save(order);
+            return "Order Placed Successfully";
         } else {
-            throw new IllegalArgumentException("Product is not in stock, skuCode: " + orderRequest.skuCode());
-            // Logic needs refactoring for a real case scenario
+            System.out.println("Product is not in stock, skuCode: " + orderRequest.skuCode());
+            return "false";
         }
     }
 }
