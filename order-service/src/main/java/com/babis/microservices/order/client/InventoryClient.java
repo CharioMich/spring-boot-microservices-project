@@ -17,7 +17,7 @@ public interface InventoryClient {
     boolean isInStock(@RequestParam String skuCode, @RequestParam Integer quantity);
 
     /**
-     * concrete method inside an interface. Allows for behaviour inside the interface.
+     * concrete method inside an interface. Allows for behavior inside the interface.
      * must be marked as default so an actual method body is provided
      * In order to add logging information, method signature must match original args + Throwable
      */
