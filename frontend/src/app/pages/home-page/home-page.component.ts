@@ -39,6 +39,7 @@ export class HomePageComponent implements OnInit {
           .subscribe(product => {
             this.products = product;
           })
+          console.log('Products: ' + this.products);
       }
     )
   }
@@ -68,8 +69,11 @@ export class HomePageComponent implements OnInit {
           userDetails: userDetails
         }
 
+        console.log('Product ordered skucode: ' + order.skuCode); 
+
         this.orderService.orderProduct(order).subscribe(() => {
           this.orderSuccess = true;
+          console.log('Order placed successfully -> from home-page.component.ts');
         }, error => {
           this.orderFailed = true;
         })
