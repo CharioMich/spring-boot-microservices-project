@@ -9,6 +9,9 @@ The project is structured under the following diagram:
 
 ![Project Structure](./project-architecture.png)
 
+## Infrastructure
+General infra dependencies such as loki, prometheus, grafana keycloak are managed using docker-compose and are located in the api-gateway service.
+
 ## Pre-requisites
 - Java 21+
 - Docker 29.x+
