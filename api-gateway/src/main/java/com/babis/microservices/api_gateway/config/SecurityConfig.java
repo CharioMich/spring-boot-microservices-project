@@ -16,13 +16,14 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    private final String[] SWAGGER_WHITELIST = {
+    private final String[] URL_WHITELIST = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/swagger-resources/**",
             "/api-docs/**",
-            "/aggregate/**"
+            "/aggregate/**",
+            "/actuator/**"
     };
 
     @Bean
@@ -32,7 +33,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        .requestMatchers(URL_WHITELIST).permitAll()
                         .anyRequest().authenticated())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
