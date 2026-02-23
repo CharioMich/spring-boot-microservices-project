@@ -38,7 +38,7 @@ target/
 /mysql/
 /volume-data/
 /data/
-/docker/tempo/tempo-data/
+/api-gateway/docker/tempo/tempo-data/
 
 ### 1. Build and Compilation Output ###
 # Maven compilation directory

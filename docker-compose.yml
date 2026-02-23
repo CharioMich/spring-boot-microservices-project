@@ -1,0 +1,232 @@
+services:
+  # Monitoring & logging (from api-gateway/docker-compose.yml)
+  loki:
+    image: grafana/loki:main
+    command: [ '-config.file=/etc/loki/local-config.yaml' ]
+    ports:
+      - '3100:3100'
+
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    command:
+      - --enable-feature=exemplar-storage
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./api-gateway/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - '9090:9090'
+
+  tempo:
+    image: grafana/tempo:2.2.2
+    command: [ '-config.file=/etc/tempo.yaml' ]
+    volumes:
+      - ./api-gateway/docker/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - ./api-gateway/docker/tempo/tempo-data:/tmp/tempo
+    ports:
+      - '3110:3100' # Tempo
+      - '9411:9411' # zipkin
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    volumes:
+      - ./api-gateway/docker/grafana:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - '3000:3000'
+
+  # Keycloak (from api-gateway/docker-compose.yml)
+  keycloak-mysql:
+    image: mysql:8
+    container_name: keycloak-mysql
+    volumes:
+      - ./api-gateway/volume-data/mysql_keycloak_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: example
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: keycloak
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: example
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: example
+    ports:
+      - "8181:8080"
+    volumes:
+      - ./api-gateway/docker/keycloak/realms/:/opt/keycloak/data/import/
+    depends_on:
+      - keycloak-mysql
+
+  # MongoDB for product-service
+  mongodb:
+    image: mongo:7.0.5
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: product-service
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./product-service/data:/data/db
+
+  # MySQL for inventory-service
+  mysql-inventory-service:
+    image: mysql:8.3.0
+    container_name: mysql-inventory-service
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./inventory-service/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./inventory-service/docker/mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # MySQL for order-service
+  mysql-order-service:
+    image: mysql:8.3.0
+    container_name: mysql-order-service
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    ports:
+      - "3316:3306"
+    volumes:
+      - ./order-service/mysql_data:/var/lib/mysql
+      - ./order-service/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Kafka stack from order-service/docker-compose.yml
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: broker
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - broker
+    ports:
+      - "8085:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8086:8080"
+    depends_on:
+      - broker
+    environment:
+      KAFKA_CLUSTERS_NAME: local
+      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+
+  # Spring Boot services - build from local code
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      - keycloak
+      - prometheus
+
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql-order-service:
+        condition: service_healthy
+      broker:
+        condition: service_started
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql-inventory-service:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - broker
+
+networks:
+  default:
+    name: microservices-network
+    driver: bridge
+

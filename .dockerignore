@@ -1,0 +1,29 @@
+# Git
+.git
+*.gitignore
+
+# Build Tool Folders (The most important ones to ignore!)
+target/
+build/
+.gradle/
+.mvn/
+
+# IDE Settings
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Docker-related
+docker-compose.yml
+Dockerfile
+.docker/
+
+# OS Generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
