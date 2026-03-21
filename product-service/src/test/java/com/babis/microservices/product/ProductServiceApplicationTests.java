@@ -9,11 +9,12 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.hamcrest.Matchers;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
-
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Integration tests for the Product Service application.
  */
+@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ProductServiceApplicationTests {
 
@@ -35,10 +36,6 @@ class ProductServiceApplicationTests {
 	void setup() {
 		RestAssured.baseURI = "http://localhost";
 		RestAssured.port = port;
-	}
-
-	static {
-		mongoDbContainer.start();
 	}
 
 	@Test
